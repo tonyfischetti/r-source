@@ -1416,7 +1416,7 @@ extern const char *locale2charset(const char *);
 
 #ifndef NO_NLS
 # ifdef ENABLE_NLS
-#  include <libintl.h>
+#  include "libintl.h"
 #  ifdef Win32
 #   define _(String) libintl_gettext (String)
 #   undef gettext /* needed for graphapp */

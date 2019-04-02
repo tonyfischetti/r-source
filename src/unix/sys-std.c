@@ -30,6 +30,10 @@
 
 /* select() is essential here, but configure has required it */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -54,9 +58,9 @@
 #include <R_ext/eventloop.h>
 #undef __SYSTEM__
 
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>		/* for unlink */
-#endif
+/* #ifdef HAVE_UNISTD_H
+#include <unistd.h>		/* for unlink */
+/* #endif */
 
 extern SA_TYPE SaveAction;
 extern Rboolean UsingReadline;
@@ -652,6 +656,29 @@ static void popReadline(void)
   }
 }
 
+
+void write_to_extended_history(char *line){
+    FILE *fptr;
+    long size;
+    char* buf;
+    char* cwdptr;
+    const char* ZCONTEXT    = getenv("ZCONTEXT");
+    size = pathconf(".", _PC_PATH_MAX);
+    buf = (char *)malloc((size_t)size);
+    cwdptr = getcwd(buf, (size_t)size);
+    fptr = fopen(EXTENDED_HISTORY_FILE, "a");
+    fprintf(fptr, ":R:%s:%s:%s:%s: %lu:0;%s\n",
+            MZUNAME,
+            MZHOSTNAME,
+            cwdptr,
+            ZCONTEXT,
+            (unsigned long)time(NULL),
+            line);
+    fclose(fptr);
+    free(buf);
+}
+
+
 static void readline_handler(char *line)
 {
     R_size_t buflen = rl_top->readline_len;
@@ -662,8 +689,10 @@ static void readline_handler(char *line)
 	return;
     if (line[0]) {
 # ifdef HAVE_READLINE_HISTORY_H
-	if (strlen(line) && rl_top->readline_addtohistory)
-	    add_history(line);
+    if (strlen(line) && rl_top->readline_addtohistory){
+        write_to_extended_history(line);
+        add_history(line);
+    }
 # endif
 	/* We need to append a \n if the completed line would fit in the
 	   buffer but not otherwise.  Byte [buflen] is zeroed in
